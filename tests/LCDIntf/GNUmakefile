@@ -1,24 +1,29 @@
 # vim: set tabstop=8 shiftwidth=8 noexpandtab:
 
-CSRCS_DIR := ../src
+TESTS_CMN_DIR := ../common
+CSRCS_DIR := ../../src
 OBJS_DIR := build
 
 $(shell mkdir -p ${OBJS_DIR} > /dev/null)
 
-VPATH = ${CSRCS_DIR}
+VPATH = ${CSRCS_DIR}:${TESTS_CMN_DIR}
 
-CPPFLAGS += -I${CPPUTEST_INC} -g -Wall
+CPPFLAGS += -I${CPPUTEST_INC} -I${CSRCS_DIR}
+CPPFLAGS += -g -Wall
+CPPFLAGS += -DTESTBUILD
 CXXFLAGS += -include ${CPPUTEST_INC}/CppUTest/MemoryLeakDetectorNewMacros.h
 CXXFLAGS += -std=c++11 -stdlib=libc++
+CXXFLAGS += -I${TESTS_CMN_DIR}
 CFLAGS += -include ${CPPUTEST_INC}/CppUTest/MemoryLeakDetectorMallocMacros.h
-CFLAGS += -I${CSRCS_DIR}
 LDFLAGS += -L${CPPUTEST_LIBDIR}
 LDLIBS += -lCppUTest -lCppUTestExt
 
+TEST_TARGET := LCDIntf.c
+
 PROG := testsRunner
 
-CXXSRCS := $(notdir $(wildcard *.cpp))
-CSRCS := $(notdir $(wildcard ${CSRCS_DIR}/*.c))
+CXXSRCS := $(notdir $(wildcard *.cpp ${TESTS_CMN_DIR}/*.cpp))
+CSRCS := $(notdir $(wildcard ${CSRCS_DIR}/${TEST_TARGET} ${TESTS_CMN_DIR}/*.c))
 OBJS := $(addsuffix .o,$(basename ${CSRCS} ${CXXSRCS}))
 OBJS := $(addprefix ${OBJS_DIR}/,${OBJS})
 PROG := $(addprefix ${OBJS_DIR}/,${PROG})
@@ -27,10 +32,10 @@ PROG := $(addprefix ${OBJS_DIR}/,${PROG})
 all	: ${PROG}
 
 ${OBJS_DIR}/%.o	: %.cpp
-	${CXX} ${CPPFLAGS} ${CXXFLAGS} ${DEPFLAGS} -c -o $@ $<
+	${CXX} ${CXXFLAGS} ${CPPFLAGS} ${DEPFLAGS} -c -o $@ $<
 
 ${OBJS_DIR}/%.o	: %.c
-	${CC} ${CPPFLAGS} ${CFLAGS} ${DEPFLAGS} -c -o $@ $<
+	${CC} ${CFLAGS} ${CPPFLAGS} ${DEPFLAGS} -c -o $@ $<
 
 ${PROG} : ${OBJS}
 	${CXX} ${CPPFLAGS} ${LDFLAGS} -o $@ $^ ${LDLIBS}
