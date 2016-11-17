@@ -1,0 +1,29 @@
+    Hardware tests
+    --------------
+  This project functionality can be tested with the following ingredients:
+1. WH1602 LCD module (HD44780);
+2. STM32VLDiscovery board;
+3. A 'Demo' project from 'an3268' ('en.stsw-stm32078.zip' from ST).
+
+    General Procedure
+    -----------------
+1. Connect an LCD module signal lines to STM32VLDiscovery board (required
+   wiring is explained within examples/LCDPort.c file);
+2. Connect an LCD module to power supply (Vss, Vdd, handle Vo too);
+3. Add files from this project to the 'an3268/Demo' project from ST:
+     src/LCDDriver.c
+     src/LCDDriver.h
+     src/LCDIntf.c
+     src/LCDIntf.h
+     src/LCDPort.h
+     examples/LCDPort.c
+4. Patch 'main.c' of the 'Demo' project with examples/main.diff ;
+5. Build the 'Demo' project, upload it to the STM32VLDiscovery board.
+
+
+##===================================================================##
+## NOTE: This simple implementation of the LCDPort module is quite   ##
+## ineffective (a procedure is called per (any) line state change).  ##
+## It is just aimed to demonstrate correctness of bit banging        ##
+## performed by LCDIntf/LCDDriver modules.                           ##
+##===================================================================##

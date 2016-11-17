@@ -1,0 +1,156 @@
+--- ../an3268/stm32vldiscovery_package/Project/Demo/src/main.c	2016-09-30 22:33:30.879077000 +0300
++++ main.c	2016-11-16 23:11:41.609917000 +0200
+@@ -19,9 +19,15 @@
+   */ 
+ 
+ /* Includes ------------------------------------------------------------------*/
++#include <stdint.h>
++#include "stm32f10x_conf.h"
+ #include "stm32f10x.h"
+ #include "STM32vldiscovery.h"
+ 
++#include "LCDPort.h"
++#include "LCDIntf.h"
++#include "LCDDriver.h"
++
+ /* Private typedef -----------------------------------------------------------*/
+ /* Private define ------------------------------------------------------------*/
+ #define  LSE_FAIL_FLAG  0x80
+@@ -39,6 +45,10 @@
+ void Delay(uint32_t nTime);
+ void TimingDelay_Decrement(void);
+ 
++void TouchLCD(void);
++
++static uint32_t lcdControllerInitStatus = 0;
++
+ /* Private functions ---------------------------------------------------------*/
+ 
+ /**
+@@ -69,6 +79,17 @@
+     while (1);
+   }
+ 
++  /* GPIO lines initialization (should be wired to an LCD) */
++  LCDIntf_Init(LCD_PORT_DATA_WIDTH_4_BIT);
++  //LCDIntf_Init(LCD_PORT_DATA_WIDTH_8_BIT);
++
++  /* LCD Controller Initialization */
++  Delay(50);
++  lcdControllerInitStatus = LCDIntf_InitializeLCDController();
++
++  LCDDriver_SetupScreenDimensions(16, 2);
++  LCDDriver_Clear();
++  
+   /* Enable access to the backup register => LSE can be enabled */
+   PWR_BackupAccessCmd(ENABLE);
+   
+@@ -142,6 +163,7 @@
+             STM32vldiscovery_LEDOff(LED4);
+             /* BlinkSpeed: 0 -> 1 -> 2, then re-cycle */    
+               BlinkSpeed ++ ; 
++            TouchLCD();                 // XXX update LCD data
+           }
+         }
+       }
+@@ -150,24 +172,30 @@
+       /* BlinkSpeed: 0 */ 
+       if(BlinkSpeed == 0)
+           {
+-            if(4 == (count % 8))
+-            STM32vldiscovery_LEDOn(LED3);
++            if(4 == (count % 8)) {
++                STM32vldiscovery_LEDOn(LED3);
++                TouchLCD();             // XXX update LCD data
++            }
+             if(0 == (count % 8))
+             STM32vldiscovery_LEDOff(LED3);
+          }
+            /* BlinkSpeed: 1 */ 
+            if(BlinkSpeed == 1)
+           {
+-            if(2 == (count % 4))
+-            STM32vldiscovery_LEDOn(LED3);
++            if(2 == (count % 4)) {
++                STM32vldiscovery_LEDOn(LED3);
++                TouchLCD();             // XXX update LCD data
++            }
+             if(0 == (count % 4))
+             STM32vldiscovery_LEDOff(LED3);
+           }  
+           /* BlinkSpeed: 2 */        
+           if(BlinkSpeed == 2)
+           {
+-            if(0 == (count % 2))
+-            STM32vldiscovery_LEDOn(LED3);
++            if(0 == (count % 2)) {
++                STM32vldiscovery_LEDOn(LED3);
++                TouchLCD();             // XXX update LCD data
++            }
+             else
+             STM32vldiscovery_LEDOff(LED3);     
+           }     
+@@ -231,3 +259,63 @@
+   */
+ 
+ /******************* (C) COPYRIGHT 2010 STMicroelectronics *****END OF FILE****/
++
++void
++Delay_microseconds(uint32_t us)
++{
++    Delay(2 + us/1000);
++}
++
++static const char * const hexToAscii = "0123456789ABCDEF";
++
++const char *
++HexToAscii(uint32_t val)
++{
++    int i;
++    static char buf[9];
++
++    for (i = 7; i >= 0; --i) {
++        buf[i] = hexToAscii[(val & 0x0000000Fu)];
++        val >>= 4;
++    }
++
++    buf[8] = '\0';
++
++    return buf;
++}
++
++void
++TouchLCD(void)
++{
++    const char * pStr;
++    static uint32_t step = 0;
++
++    switch (step) {
++    case 1:
++        LCDDriver_GotoXY(0, 0);
++        LCDDriver_Puts((int8_t*)"InitLCD() :");
++        LCDDriver_GotoXY(0, 1);
++        pStr = HexToAscii(lcdControllerInitStatus);
++        LCDDriver_Puts((int8_t*)pStr);
++        break;
++    case 0:
++        /* FALLTHROUGH */
++    case 2:
++        /* FALLTHROUGH */
++    case 3:
++        /* FALLTHROUGH */
++    case 4:
++        break;
++    case 5:
++        LCDDriver_Clear();
++        break;
++    default:
++        LCDDriver_GotoXY(0, 0);
++        pStr = HexToAscii(step);
++        LCDDriver_Puts((int8_t*)pStr);
++        break;
++    };
++
++    ++step;
++}
++
